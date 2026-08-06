@@ -22,11 +22,20 @@
 #include <linux/sort.h>
 
 #include <net/dsa.h>
-#include <net/dscp.h>
-#include <net/ieee8021q.h>
+#include <net/inet_dscp.h>
 #include <net/pkt_cls.h>
 
 #include "yt921x.h"
+
+/*
+ * 兼容层：为 Linux 6.6 内核提供 ietf_dscp_to_ieee8021q_tt 函数。
+ * 该函数在较新的内核中才被引入，用于将 DSCP 值映射到 802.1Q 优先级。
+ * 其标准实现就是取 DSCP 值的高 3 位。
+ */
+static int ietf_dscp_to_ieee8021q_tt(u8 dscp)
+{
+    return dscp >> 3;
+};
 
 /* Compatibility macros for kernels < 6.7 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
