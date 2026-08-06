@@ -19,7 +19,13 @@ cp -a $GITHUB_WORKSPACE/configfiles/etc/* package/base-files/files/etc/
 
 # 追加自定义内核配置项
 echo "CONFIG_PSI=y
-CONFIG_KPROBES=y" >> target/linux/rockchip/armv8/config-6.6
+CONFIG_KPROBES=y
+CONFIG_NET_DSA=y
+CONFIG_NET_DSA_YT921X=y
+CONFIG_NET_DSA_TAG_YT921X=y
+CONFIG_NET_DSA_YT921X_DEBUG=n
+CONFIG_NET_DSA_YT921X_CR881X=n" >> target/linux/rockchip/armv8/config-6.6
+cat target/linux/rockchip/armv8/config-6.6
 
 
 # 集成CPU性能跑分脚本
@@ -52,7 +58,8 @@ endef
 TARGET_DEVICES += bdy_g98-nas" >> target/linux/rockchip/image/legacy.mk
 
 
-# 复制 02_network 网络配置文件到 target/linux/rockchip/armv8/base-files/etc/board.d/ 目录下
+# 复制配置文件到对应的目录下
+cp -f $GITHUB_WORKSPACE/configfiles/init.sh target/linux/rockchip/armv8/base-files/lib/board/init.sh
 cp -f $GITHUB_WORKSPACE/configfiles/02_network target/linux/rockchip/armv8/base-files/etc/board.d/02_network
 
 
@@ -60,7 +67,10 @@ cp -a $GITHUB_WORKSPACE/configfiles/driver/* target/linux/generic/files
 ls target/linux/generic/files
 
 
-cp -f $GITHUB_WORKSPACE/configfiles/driver/999-net-dsa-add-yt921x-header-defs.patch target/linux/rockchip/patches-6.6/999-net-dsa-add-yt921x-header-defs.patch
+cp -f $GITHUB_WORKSPACE/configfiles/driver/999-01-net-dsa-add-yt921x-header-defs.patch target/linux/rockchip/patches-6.6/999-01-net-dsa-add-yt921x-header-defs.patch
+
+
+# cp -f $GITHUB_WORKSPACE/configfiles/netdevices.mk package/kernel/linux/modules/netdevices.mk
 
 
 # cp -f $GITHUB_WORKSPACE/configfiles/driver/010-add-yt921x-tag-driver.patch target/linux/rockchip/patches-6.6/010-add-yt921x-tag-driver.patch
