@@ -69,10 +69,12 @@ struct ethtool_keee;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 #define dsa_port_bridge_dev_get(dp) ((dp)->bridge_dev)
 #define dsa_port_offloads_bridge_dev(dp, bdev) ((dp)->bridge_dev == (bdev))
+#ifndef dsa_switch_for_each_user_port
 #define dsa_switch_for_each_user_port(dp, ds) \
     dsa_for_each_port(dp, ds) \
         if (dsa_is_user_port(dp))
 
+#endif
 /* Compatibility: dsa_port_simple_hsr_leave/join renamed from
  * dsa_port_hsr_leave/join in 6.7 */
 #define dsa_port_simple_hsr_leave(dp, hsr_dev)	dsa_port_hsr_leave(dp, hsr_dev)
@@ -1111,29 +1113,28 @@ yt921x_dsa_get_pause_stats(struct dsa_switch *ds, int port,
 static int
 
 /* Forward declaration for yt921x_set_eee */
-static int yt921x_set_eee(struct yt921x_priv *priv, int port, struct ethtool_keee *e);
+static int yt921x_set_eee(struct yt921x_priv *priv, int port, bool enable);
 
 /* Compatibility: ethtool_eee -> ethtool_keee wrapper for kernel 6.6 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 static int yt921x_dsa_set_mac_eee_66(struct dsa_switch *ds, int port, struct ethtool_eee *e)
 {
 	struct yt921x_priv *priv = to_yt921x_priv(ds);
-	struct ethtool_keee keee = { .eee_enabled = e->eee_enabled };
+
 	int res;
 
 	mutex_lock(&priv->reg_lock);
-	res = yt921x_set_eee(priv, port, &keee);
+	res = yt921x_set_eee(priv, port, e->eee_enabled);
 	mutex_unlock(&priv->reg_lock);
 
 	return res;
 }
 #endif
 
-yt921x_set_eee(struct yt921x_priv *priv, int port, struct ethtool_keee *e)
+static int yt921x_set_eee(struct yt921x_priv *priv, int port, bool enable)
 {
 	/* Poor datasheet for EEE operations; don't ask if you are confused */
 
-	bool enable = e->eee_enabled;
 	u16 new_mask;
 	int res;
 
@@ -1175,7 +1176,7 @@ yt921x_dsa_set_mac_eee(struct dsa_switch *ds, int port, struct ethtool_keee *e)
 	int res;
 
 	mutex_lock(&priv->reg_lock);
-	res = yt921x_set_eee(priv, port, e);
+	res = yt921x_set_eee(priv, port, e->eee_enabled);
 	mutex_unlock(&priv->reg_lock);
 
 	return res;
@@ -1186,9 +1187,9 @@ static int yt921x_mtu_fetch(struct yt921x_priv *priv, int port)
 	struct dsa_port *dp = dsa_to_port(&priv->ds, port);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
-	/* Kernel 6.6: use bridge_dev as fallback */
-	if (dp->bridge_dev)
-		return READ_ONCE(dp->bridge_dev->mtu);
+	/* Kernel 6.6: use bridge as fallback */
+	if (dp->bridge)
+		return READ_ONCE(dp->bridge->mtu);
 	return ETH_DATA_LEN;
 #else
 	return dp->user ? READ_ONCE(dp->user->mtu) : ETH_DATA_LEN;
