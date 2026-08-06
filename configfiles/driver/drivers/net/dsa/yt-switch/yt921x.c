@@ -27,16 +27,6 @@
 
 #include "yt921x.h"
 
-/*
- * 兼容层：为 Linux 6.6 内核提供 ietf_dscp_to_ieee8021q_tt 函数。
- * 该函数在较新的内核中才被引入，用于将 DSCP 值映射到 802.1Q 优先级。
- * 其标准实现就是取 DSCP 值的高 3 位。
- */
-static int ietf_dscp_to_ieee8021q_tt(u8 dscp)
-{
-    return dscp >> 3;
-};
-
 /* Compatibility macros for kernels < 6.7 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 #define dsa_port_bridge_dev_get(dp) ((dp)->bridge_dev)
@@ -44,6 +34,30 @@ static int ietf_dscp_to_ieee8021q_tt(u8 dscp)
 #define dsa_switch_for_each_user_port(dp, ds) \
     dsa_for_each_port(dp, ds) \
         if (dsa_is_user_port(dp))
+
+/* Compatibility: dsa_port_simple_hsr_leave/join renamed from
+ * dsa_port_hsr_leave/join in 6.7 */
+#define dsa_port_simple_hsr_leave(dp, hsr_dev)	dsa_port_hsr_leave(dp, hsr_dev)
+#define dsa_port_simple_hsr_join(dp, hsr_dev)	dsa_port_hsr_join(dp, hsr_dev)
+
+/* Compatibility: dsa_supports_eee added in 6.7 */
+static inline bool dsa_supports_eee(const struct dsa_switch *ds)
+{
+	return true;
+}
+
+/* Compatibility: dsa_switch_shutdown added in 6.7 */
+#define dsa_switch_shutdown(ds)	dsa_switch_suspend(ds, true)
+
+#endif
+
+/* Compatibility: ietf_dscp_to_ieee8021q_tt added in 6.8 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
+static int ietf_dscp_to_ieee8021q_tt(u8 dscp)
+{
+	/* Standard mapping: use the 3 most significant bits of DSCP as PCP */
+	return dscp >> 3;
+}
 #endif
 
 struct yt921x_mib_desc {
@@ -2470,6 +2484,7 @@ err:
 	return res;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 static int
 yt921x_dsa_cls_flower_del(struct dsa_switch *ds, int port,
 			  struct flow_cls_offload *cls, bool ingress)
@@ -2504,6 +2519,21 @@ yt921x_dsa_cls_flower_add(struct dsa_switch *ds, int port,
 
 	return res;
 }
+#else
+static int
+yt921x_dsa_cls_flower_del(struct dsa_switch *ds, int port,
+			  struct flow_cls_offload *cls)
+{
+	return yt921x_dsa_cls_flower_del(ds, port, cls, false);
+}
+
+static int
+yt921x_dsa_cls_flower_add(struct dsa_switch *ds, int port,
+			  struct flow_cls_offload *cls)
+{
+	return yt921x_dsa_cls_flower_add(ds, port, cls, false);
+}
+#endif
 
 static int
 yt921x_mirror_del(struct yt921x_priv *priv, int port, bool ingress)
@@ -4403,6 +4433,7 @@ static int yt921x_dsa_port_setup(struct dsa_switch *ds, int port)
 	return res;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 /* Not "port" - DSCP mapping is global */
 static int __maybe_unused
 yt921x_dsa_port_get_dscp_prio(struct dsa_switch *ds, int port, u8 dscp)
@@ -4463,6 +4494,7 @@ yt921x_dsa_port_add_dscp_prio(struct dsa_switch *ds, int port, u8 dscp, u8 prio)
 	return res;
 }
 
+#endif
 static int yt921x_edata_wait(struct yt921x_priv *priv, u32 *valp)
 {
 	u32 val = YT921X_EDATA_DATA_IDLE;
@@ -4893,8 +4925,10 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_policer_add	= yt921x_dsa_port_policer_add,
 	.port_setup_tc		= yt921x_dsa_port_setup_tc,
 	/* acl */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	.cls_flower_del		= yt921x_dsa_cls_flower_del,
 	.cls_flower_add		= yt921x_dsa_cls_flower_add,
+#endif
 	/* hsr */
 	.port_hsr_leave		= dsa_port_simple_hsr_leave,
 	.port_hsr_join		= dsa_port_simple_hsr_join,
@@ -4940,9 +4974,11 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_setup		= yt921x_dsa_port_setup,
 #if IS_ENABLED(CONFIG_DCB)
 	/* dscp */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	.port_get_dscp_prio	= yt921x_dsa_port_get_dscp_prio,
 	.port_del_dscp_prio	= yt921x_dsa_port_del_dscp_prio,
 	.port_add_dscp_prio	= yt921x_dsa_port_add_dscp_prio,
+#endif
 #endif
 	/* chip */
 	.setup			= yt921x_dsa_setup,
