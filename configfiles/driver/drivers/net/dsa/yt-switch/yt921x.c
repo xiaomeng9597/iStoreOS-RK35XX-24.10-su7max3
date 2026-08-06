@@ -27,6 +27,44 @@
 
 #include "yt921x.h"
 
+/* Compatibility: define LINUX_VERSION_CODE if not available (out-of-tree builds) */
+#ifndef KERNEL_VERSION
+#define KERNEL_VERSION(a, b, c) (((a) << 16) + ((b) << 8) + (c))
+#endif
+#ifndef LINUX_VERSION_CODE
+#define LINUX_VERSION_CODE KERNEL_VERSION(6, 6, 144)
+#endif
+
+/* Forward declaration for ethtool_keee (kernel 6.7+ API) */
+struct ethtool_keee;
+
+/* Compatibility: IEEE8021Q_TT_BK may not be defined in older kernels */
+#ifndef IEEE8021Q_TT_BK
+#define IEEE8021Q_TT_BK  5
+#endif
+
+/* Compatibility: DSCP_MAX may not be defined in older kernels */
+#ifndef DSCP_MAX
+#define DSCP_MAX  64
+#endif
+
+/* Compatibility: kvzalloc_obj may not be available in older kernels */
+#ifndef kvzalloc_obj
+#define kvzalloc_obj(ptr) kvzalloc(sizeof(*(ptr)), GFP_KERNEL)
+#endif
+
+/* Compatibility: disable_delayed_work_sync added in 6.7 */
+#ifndef disable_delayed_work_sync
+#define disable_delayed_work_sync(w) cancel_delayed_work_sync(w)
+#endif
+
+/* Compatibility: skip_sw field not available in older kernels */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+#define cls_skip_sw(cls) false
+#else
+#define cls_skip_sw(cls) ((cls)->common.skip_sw)
+#endif
+
 /* Compatibility macros for kernels < 6.7 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
 #define dsa_port_bridge_dev_get(dp) ((dp)->bridge_dev)
@@ -1071,6 +1109,26 @@ yt921x_dsa_get_pause_stats(struct dsa_switch *ds, int port,
 }
 
 static int
+
+/* Forward declaration for yt921x_set_eee */
+static int yt921x_set_eee(struct yt921x_priv *priv, int port, struct ethtool_keee *e);
+
+/* Compatibility: ethtool_eee -> ethtool_keee wrapper for kernel 6.6 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+static int yt921x_dsa_set_mac_eee_66(struct dsa_switch *ds, int port, struct ethtool_eee *e)
+{
+	struct yt921x_priv *priv = to_yt921x_priv(ds);
+	struct ethtool_keee keee = { .eee_enabled = e->eee_enabled };
+	int res;
+
+	mutex_lock(&priv->reg_lock);
+	res = yt921x_set_eee(priv, port, &keee);
+	mutex_unlock(&priv->reg_lock);
+
+	return res;
+}
+#endif
+
 yt921x_set_eee(struct yt921x_priv *priv, int port, struct ethtool_keee *e)
 {
 	/* Poor datasheet for EEE operations; don't ask if you are confused */
@@ -1127,7 +1185,14 @@ static int yt921x_mtu_fetch(struct yt921x_priv *priv, int port)
 {
 	struct dsa_port *dp = dsa_to_port(&priv->ds, port);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+	/* Kernel 6.6: use bridge_dev as fallback */
+	if (dp->bridge_dev)
+		return READ_ONCE(dp->bridge_dev->mtu);
+	return ETH_DATA_LEN;
+#else
 	return dp->user ? READ_ONCE(dp->user->mtu) : ETH_DATA_LEN;
+#endif
 }
 
 static int
@@ -2153,7 +2218,7 @@ yt921x_acl_rule_ext_parse_flow_action(struct yt921x_acl_rule_ext *ruleext,
 		}
 		default:
 fallback:
-			if (cls->common.skip_sw) {
+			if (cls_skip_sw(cls)) {
 				NL_SET_ERR_MSG_FMT_MOD(extack,
 						       "Action not supported when skip_sw: %s",
 						       reason);
@@ -2170,7 +2235,7 @@ fallback:
 			break;
 		}
 
-	ruleext->r.sw_assisted = !cls->common.skip_sw;
+	ruleext->r.sw_assisted = !cls_skip_sw(cls);
 	return 0;
 }
 
@@ -2426,7 +2491,7 @@ yt921x_acl_add(struct yt921x_priv *priv,
 	binid = entid % YT921X_ACL_ENT_PER_BLK;
 	aclblk = priv->acl_blks[blkid];
 	if (!aclblk) {
-		aclblk = kvzalloc_obj(*aclblk);
+		aclblk = kvzalloc_obj(aclblk);
 		if (!aclblk)
 			return -ENOMEM;
 		priv->acl_blks[blkid] = aclblk;
@@ -3789,6 +3854,26 @@ yt921x_dsa_port_bridge_join(struct dsa_switch *ds, int port,
 	return res;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+/* Compatibility: bridge functions signature changed in 6.7 */
+static void yt921x_dsa_port_bridge_leave_66(struct dsa_switch *ds, int port,
+				     struct dsa_bridge *bridge)
+{
+	struct net_device *br = bridge->dev;
+	yt921x_dsa_port_bridge_leave(ds, port, br);
+}
+
+static int yt921x_dsa_port_bridge_join_66(struct dsa_switch *ds, int port,
+					  struct dsa_bridge *bridge,
+					  bool *joined,
+					  struct netlink_ext_ack *extack)
+{
+	struct net_device *br = bridge->dev;
+	return yt921x_dsa_port_bridge_join(ds, port, br);
+}
+#endif
+
+
 static int
 yt921x_dsa_port_mst_state_set(struct dsa_switch *ds, int port,
 			      const struct switchdev_mst_state *st)
@@ -4915,8 +5000,14 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.get_stats64		= yt921x_dsa_get_stats64,
 	.get_pause_stats	= yt921x_dsa_get_pause_stats,
 	/* eee */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	.support_eee		= dsa_supports_eee,
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+	.set_mac_eee		= yt921x_dsa_set_mac_eee_66,
+#else
 	.set_mac_eee		= yt921x_dsa_set_mac_eee,
+#endif
 	/* mtu */
 	.port_change_mtu	= yt921x_dsa_port_change_mtu,
 	.port_max_mtu		= yt921x_dsa_port_max_mtu,
@@ -4953,8 +5044,16 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	/* bridge */
 	.port_pre_bridge_flags	= yt921x_dsa_port_pre_bridge_flags,
 	.port_bridge_flags	= yt921x_dsa_port_bridge_flags,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+	.port_bridge_leave	= yt921x_dsa_port_bridge_leave_66,
+#else
 	.port_bridge_leave	= yt921x_dsa_port_bridge_leave,
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0)
+	.port_bridge_join	= yt921x_dsa_port_bridge_join_66,
+#else
 	.port_bridge_join	= yt921x_dsa_port_bridge_join,
+#endif
 	/* mst */
 	.port_mst_state_set	= yt921x_dsa_port_mst_state_set,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
@@ -5072,7 +5171,9 @@ static int yt921x_mdio_probe(struct mdio_device *mdiodev)
 	ds = &priv->ds;
 	ds->dev = dev;
 	ds->assisted_learning_on_cpu_port = true;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	ds->dscp_prio_mapping_is_global = true;
+#endif
 	ds->priv = priv;
 	ds->ops = &yt921x_dsa_switch_ops;
 	ds->ageing_time_min = 1 * 5000;
