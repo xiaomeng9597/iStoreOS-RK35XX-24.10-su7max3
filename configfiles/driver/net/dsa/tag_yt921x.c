@@ -7,49 +7,47 @@
  * +----+----+-------+-----+----+---------
  * | DA | SA | TagET | Tag | ET | Payload ...
  * +----+----+-------+-----+----+---------
- *   6    6      2      6    2       N
+ * 6    6    2       6     2    N
  *
  * Tag Ethertype: CPU_TAG_TPID_TPID (default: ETH_P_YT921X = 0x9988)
- *   * Hardcoded for the moment, but still configurable. Discuss it if there
- *     are conflicts somewhere and/or you want to change it for some reason.
+ *
+ * Hardcoded for the moment, but still configurable. Discuss it if there
+ * are conflicts somewhere and/or you want to change it for some reason.
  * Tag:
- *   2: VLAN Tag
- *   2: Rx Port
- *     15b: Rx Port Valid
- *     14b-11b: Rx Port
- *     10b-0b: Cmd?
- *   2: Tx Port(s)
- *     15b: Tx Port(s) Valid
- *     10b-0b: Tx Port(s) Mask
+ * 2:  VLAN Tag
+ * 2:  Rx Port
+ * 15b: Rx Port Valid
+ * 14b-11b: Rx Port
+ * 10b-0b:  Cmd?
+ * 2:  Tx Port(s)
+ * 15b: Tx Port(s) Valid
+ * 10b-0b:  Tx Port(s) Mask
  */
 
 #include <linux/etherdevice.h>
 #include <net/dsa.h>
-#include "tag.h"
 
-#define YT921X_TAG_NAME	"yt921x"
-
-#define YT921X_TAG_LEN	8
+#define YT921X_TAG_NAME "yt921x"
+#define YT921X_TAG_LEN 8
 
 #ifndef ETH_P_YT921X
-#define ETH_P_YT921X  0x9988 
+#define ETH_P_YT921X 0x9988
 #endif
 
 #ifndef DSA_TAG_PROTO_YT921X
-#define DSA_TAG_PROTO_YT921X  30 
+#define DSA_TAG_PROTO_YT921X 30
 #endif
 
 #define YT921X_TAG_PORT_EN		BIT(15)
 #define YT921X_TAG_RX_PORT_M		GENMASK(14, 11)
 #define YT921X_TAG_RX_CMD_M		GENMASK(10, 0)
-#define  YT921X_TAG_RX_CMD(x)			FIELD_PREP(YT921X_TAG_RX_CMD_M, (x))
-#define  YT921X_TAG_RX_CMD_FORWARDED		0x80
-#define  YT921X_TAG_RX_CMD_UNK_UCAST		0xb2
-#define  YT921X_TAG_RX_CMD_UNK_MCAST		0xb4
+#define YT921X_TAG_RX_CMD(x)		FIELD_PREP(YT921X_TAG_RX_CMD_M, (x))
+#define YT921X_TAG_RX_CMD_FORWARDED	0x80
+#define YT921X_TAG_RX_CMD_UNK_UCAST	0xb2
+#define YT921X_TAG_RX_CMD_UNK_MCAST	0xb4
 #define YT921X_TAG_TX_PORTS		GENMASK(10, 0)
 
-static struct sk_buff *
-yt921x_tag_xmit(struct sk_buff *skb, struct net_device *netdev)
+static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *netdev)
 {
 	__be16 *tag;
 	u16 tx;
@@ -58,7 +56,6 @@ yt921x_tag_xmit(struct sk_buff *skb, struct net_device *netdev)
 	dsa_alloc_etype_header(skb, YT921X_TAG_LEN);
 
 	tag = dsa_etype_header_pos_tx(skb);
-
 	tag[0] = htons(ETH_P_YT921X);
 	/* VLAN tag unrelated when TX */
 	tag[1] = 0;
@@ -70,8 +67,7 @@ yt921x_tag_xmit(struct sk_buff *skb, struct net_device *netdev)
 	return skb;
 }
 
-static struct sk_buff *
-yt921x_tag_rcv(struct sk_buff *skb, struct net_device *netdev)
+static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb, struct net_device *netdev)
 {
 	unsigned int port;
 	__be16 *tag;
@@ -82,27 +78,23 @@ yt921x_tag_rcv(struct sk_buff *skb, struct net_device *netdev)
 		return NULL;
 
 	tag = dsa_etype_header_pos_rx(skb);
-
 	if (unlikely(tag[0] != htons(ETH_P_YT921X))) {
-		dev_warn_ratelimited(&netdev->dev,
-				     "Unexpected EtherType 0x%04x\n",
-				     ntohs(tag[0]));
+		dev_warn_ratelimited(&netdev->dev, "Unexpected EtherType 0x%04x\n", ntohs(tag[0]));
 		return NULL;
 	}
 
 	/* Locate which port this is coming from */
 	rx = ntohs(tag[2]);
 	if (unlikely((rx & YT921X_TAG_PORT_EN) == 0)) {
-		dev_warn_ratelimited(&netdev->dev,
-				     "Unexpected rx tag 0x%04x\n", rx);
+		dev_warn_ratelimited(&netdev->dev, "Unexpected rx tag 0x%04x\n", rx);
 		return NULL;
 	}
 
 	port = FIELD_GET(YT921X_TAG_RX_PORT_M, rx);
+
 	skb->dev = dsa_conduit_find_user(netdev, 0, port);
 	if (unlikely(!skb->dev)) {
-		dev_warn_ratelimited(&netdev->dev,
-				     "Couldn't decode source port %u\n", port);
+		dev_warn_ratelimited(&netdev->dev, "Couldn't decode source port %u\n", port);
 		return NULL;
 	}
 
@@ -120,8 +112,7 @@ yt921x_tag_rcv(struct sk_buff *skb, struct net_device *netdev)
 		 */
 		break;
 	default:
-		dev_warn_ratelimited(&netdev->dev,
-				     "Unexpected rx cmd 0x%02x\n", cmd);
+		dev_warn_ratelimited(&netdev->dev, "Unexpected rx cmd 0x%02x\n", cmd);
 		break;
 	}
 
