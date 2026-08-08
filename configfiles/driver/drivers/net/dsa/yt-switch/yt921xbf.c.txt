@@ -20,7 +20,6 @@
 #include <linux/of_net.h>
 
 #include <net/dsa.h>
-#include <linux/version.h>
 
 #include "yt921x.h"
 
@@ -39,94 +38,6 @@ struct yt921x_mib_desc {
  * structured go to their *_stats() methods, but we need their sizes and offsets
  * to perform 32bit MIB overflow wraparound.
  */
-
-/* ============================================================
- * Compatibility definitions for Linux 6.6
- * (These types/functions exist natively in 6.7+/6.8+)
- * ============================================================ */
-
-/* --- 6.8: struct ethtool_eth_mac_stats --- */
-#ifndef HAVE_STRUCT_ETHTOOL_ETH_MAC_STATS
-struct ethtool_eth_mac_stats {
-	__u64 FramesTransmittedOK;
-	__u64 SingleCollisionFrames;
-	__u64 MultipleCollisionFrames;
-	__u64 FramesReceivedOK;
-	__u64 FrameCheckSequenceErrors;
-	__u64 AlignmentErrors;
-	__u64 OctetsTransmittedOK;
-	__u64 FramesWithDeferredXmissions;
-	__u64 LateCollisions;
-	__u64 FramesAbortedDueToXSColls;
-	__u64 FramesLostDueToIntMACXmitError;
-	__u64 CarrierSenseErrors;
-	__u64 OctetsReceivedOK;
-	__u64 FramesLostDueToIntMACRcvError;
-	__u64 MulticastFramesXmittedOK;
-	__u64 BroadcastFramesXmittedOK;
-	__u64 FramesWithExcessiveDeferral;
-	__u64 MulticastFramesReceivedOK;
-	__u64 BroadcastFramesReceivedOK;
-	__u64 InRangeLengthErrors;
-	__u64 OutOfRangeLengthField;
-	__u64 FrameTooLongErrors;
-	__u64 Reserved;
-};
-#define HAVE_STRUCT_ETHTOOL_ETH_MAC_STATS
-#endif
-
-/* --- 6.8: struct ethtool_eth_ctrl_stats --- */
-#ifndef HAVE_STRUCT_ETHTOOL_ETH_CTRL_STATS
-struct ethtool_eth_ctrl_stats {
-	__u64 MACControlFramesTransmitted;
-	__u64 MACControlFramesReceived;
-	__u64 UnsupportedOpcodesReceived;
-};
-#define HAVE_STRUCT_ETHTOOL_ETH_CTRL_STATS
-#endif
-
-/* --- 6.8: struct ethtool_rmon_stats --- */
-#ifndef HAVE_STRUCT_ETHTOOL_RMON_STATS
-struct ethtool_rmon_stats {
-	__u64 undersize_pkts;
-	__u64 oversized_pkts;
-	__u64 fragments;
-	__u64 jabbers;
-	__u64 hist[7];
-	__u64 hist_tx[7];
-};
-#define HAVE_STRUCT_ETHTOOL_RMON_STATS
-#endif
-
-/* --- 6.8: struct ethtool_pause_stats --- */
-#ifndef HAVE_STRUCT_ETHTOOL_PAUSE_STATS
-struct ethtool_pause_stats {
-	__u32 tx_pause_frames;
-	__u32 rx_pause_frames;
-	__u32 tx_pause_control_frames_received;
-	__u32 rx_pause_control_frames_transmitted;
-	__u32 reserved;
-};
-#define HAVE_STRUCT_ETHTOOL_PAUSE_STATS
-#endif
-
-/* --- 6.7: dsa_port_simple_hsr_leave / dsa_port_simple_hsr_join --- */
-#ifndef HAVE_DSA_PORT_SIMPLE_HSR
-void dsa_port_simple_hsr_leave(struct dsa_port *dp, struct netlink_ext_ack *extack)
-{
-	/* Simple HSR leave - nothing to do on 6.6 */
-}
-EXPORT_SYMBOL_GPL(dsa_port_simple_hsr_leave);
-
-int dsa_port_simple_hsr_join(struct dsa_port *dp, struct netlink_ext_ack *extack)
-{
-	/* Simple HSR join - nothing to do on 6.6 */
-	return 0;
-}
-EXPORT_SYMBOL_GPL(dsa_port_simple_hsr_join);
-#define HAVE_DSA_PORT_SIMPLE_HSR
-#endif
-
 static const struct yt921x_mib_desc yt921x_mib_descs[] = {
 	MIB_DESC(1, YT921X_MIB_DATA_RX_BROADCAST, NULL),
 	MIB_DESC(1, YT921X_MIB_DATA_RX_PAUSE, NULL),
@@ -2977,13 +2888,10 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.get_strings		= yt921x_dsa_get_strings,
 	.get_ethtool_stats	= yt921x_dsa_get_ethtool_stats,
 	.get_sset_count		= yt921x_dsa_get_sset_count,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
 	.get_eth_mac_stats	= yt921x_dsa_get_eth_mac_stats,
 	.get_eth_ctrl_stats	= yt921x_dsa_get_eth_ctrl_stats,
 	.get_rmon_stats		= yt921x_dsa_get_rmon_stats,
-#endif /* 6.8+ structured stats callbacks */
 	.get_stats64		= yt921x_dsa_get_stats64,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
 	.get_pause_stats	= yt921x_dsa_get_pause_stats,
 	/* eee */
 	.support_eee		= dsa_supports_eee,
@@ -2992,7 +2900,6 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_change_mtu	= yt921x_dsa_port_change_mtu,
 	.port_max_mtu		= yt921x_dsa_port_max_mtu,
 	/* hsr */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	.port_hsr_leave		= dsa_port_simple_hsr_leave,
 	.port_hsr_join		= dsa_port_simple_hsr_join,
 	/* mirror */
@@ -3025,8 +2932,6 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_setup		= yt921x_dsa_port_setup,
 	/* chip */
 	.setup			= yt921x_dsa_setup,
-#endif /* 6.7+ HSR callbacks */
-#endif /* 6.8+ pause stats callback */
 };
 
 static void yt921x_mdio_shutdown(struct mdio_device *mdiodev)
@@ -3105,9 +3010,7 @@ static int yt921x_mdio_probe(struct mdio_device *mdiodev)
 
 	ds = &priv->ds;
 	ds->dev = dev;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	ds->assisted_learning_on_cpu_port = true;
-#endif /* 6.7+ assisted_learning_on_cpu_port */
 	ds->priv = priv;
 	ds->ops = &yt921x_dsa_switch_ops;
 	ds->ageing_time_min = 1 * 5000;
