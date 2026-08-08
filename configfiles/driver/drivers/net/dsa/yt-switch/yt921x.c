@@ -3027,7 +3027,6 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_setup		= yt921x_dsa_port_setup,
 	/* chip */
 	.setup			= yt921x_dsa_setup,
-
 };
 
 static void yt921x_mdio_shutdown(struct mdio_device *mdiodev)
