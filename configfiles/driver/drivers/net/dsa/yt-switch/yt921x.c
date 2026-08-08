@@ -2985,6 +2985,7 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.get_stats64		= yt921x_dsa_get_stats64,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
 	.get_pause_stats	= yt921x_dsa_get_pause_stats,
+#endif
 	/* eee */
 	.support_eee		= dsa_supports_eee,
 	.set_mac_eee		= yt921x_dsa_set_mac_eee,
@@ -2995,6 +2996,7 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
 	.port_hsr_leave		= dsa_port_simple_hsr_leave,
 	.port_hsr_join		= dsa_port_simple_hsr_join,
+#endif
 	/* mirror */
 	.port_mirror_del	= yt921x_dsa_port_mirror_del,
 	.port_mirror_add	= yt921x_dsa_port_mirror_add,
@@ -3025,8 +3027,7 @@ static const struct dsa_switch_ops yt921x_dsa_switch_ops = {
 	.port_setup		= yt921x_dsa_port_setup,
 	/* chip */
 	.setup			= yt921x_dsa_setup,
-#endif /* 6.7+ HSR callbacks */
-#endif /* 6.8+ pause stats callback */
+
 };
 
 static void yt921x_mdio_shutdown(struct mdio_device *mdiodev)
