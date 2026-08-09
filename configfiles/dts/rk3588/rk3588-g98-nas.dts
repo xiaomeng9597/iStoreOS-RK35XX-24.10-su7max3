@@ -849,6 +849,16 @@
 			rockchip,pins = <0 RK_PD5 RK_FUNC_GPIO &pcfg_output_high>;
 		};
 	};
+
+	gmac {
+		mdio0_pins: mdio0-pins {
+			rockchip,pins = <3 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		mdio1_pins: mdio1-pins {
+			rockchip,pins = <4 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
 
 /* ===== Storage ===== */
@@ -1098,12 +1108,19 @@
 
 /* ===== Switch ===== */
 &mdio0 {
+	pinctrl-0 = <&mdio0_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+
 	switch@1d {
 		compatible = "motorcomm,yt9215";
 		reg = <29>;
 		status = "okay";
 		dsa,member = <1 0>;
 		switchid = <0>;
+		reset-gpios = <&gpio3 RK_PD0 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <10000>; /* 10ms */
+		reset-deassert-us = <50000>; /* 50ms */
 
 		mdio {
 			#address-cells = <1>;
@@ -1159,12 +1176,20 @@
 };
 
 &mdio1 {
+	pinctrl-0 = <&mdio1_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+
 	switch@1d {
 		compatible = "motorcomm,yt9215";
 		reg = <29>;
 		status = "okay";
 		dsa,member = <0 0>;
-		switchid = <0>;
+		switchid = <1>;
+
+		reset-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <10000>; /* 10ms */
+		reset-deassert-us = <50000>; /* 50ms */
 
 		mdio {
 			#address-cells = <1>;
