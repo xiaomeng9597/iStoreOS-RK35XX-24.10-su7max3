@@ -578,6 +578,11 @@ struct yt921x_priv {
 	struct mii_bus *mbus_ext;
 	struct yt921x_port ports[YT921X_PORT_NUM];
 	u16 eee_ports_mask;
+
+	struct delayed_work disable_tso_work;
+	struct net_device *conduit;
+	const struct net_device_ops *orig_conduit_ops;
+	struct net_device_ops conduit_ops;
 };
 
 #endif
