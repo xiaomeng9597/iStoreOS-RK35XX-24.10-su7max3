@@ -2209,7 +2209,7 @@ static int yt921x_port_config(struct yt921x_priv *priv, int port, unsigned int m
 		if (res)
 			return res;
 
-		res = yt921x_reg_write(priv, YT921X_XMIIn(port), 0x841C4108);	//0x80408 = 0x841C4108,延迟，啥的全部在里面了
+		res = yt921x_reg_write(priv, YT921X_XMIIn(port), 0x841C4108); //0x80408 = 0x841C4108,延迟，啥的全部在里面了
 		if (res)
 			return res;
 		break;
