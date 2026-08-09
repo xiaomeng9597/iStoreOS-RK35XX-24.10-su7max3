@@ -1186,7 +1186,6 @@
 		status = "okay";
 		dsa,member = <0 0>;
 		switchid = <1>;
-
 		reset-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <10000>; /* 10ms */
 		reset-deassert-us = <50000>; /* 50ms */
