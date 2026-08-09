@@ -7,7 +7,7 @@
  * +----+----+-------+-----+----+---------
  * | DA | SA | TagET | Tag | ET | Payload ...
  * +----+----+-------+-----+----+---------
- * 6    6    2       6     2    N
+ *  6    6     2       6     2    N
  *
  * Tag Ethertype: CPU_TAG_TPID_TPID (default: ETH_P_YT921X = 0x9988)
  *
@@ -15,14 +15,14 @@
  * are conflicts somewhere and/or you want to change it for some reason.
  *
  * Tag:
- * 2: VLAN Tag
- * 2: Rx Port
- * 15b: Rx Port Valid
- * 14b-11b: Rx Port
- * 10b-0b: Cmd?
- * 2: Tx Port(s)
- * 15b: Tx Port(s) Valid
- * 10b-0b: Tx Port(s) Mask
+ *   2: VLAN Tag
+ *   2: Rx Port
+ *     15b: Rx Port Valid
+ *     14b-11b: Rx Port
+ *     10b-0b: Cmd?
+ *   2: Tx Port(s)
+ *     15b: Tx Port(s) Valid
+ *     10b-0b: Tx Port(s) Mask
  */
 
 #include <linux/etherdevice.h>
@@ -44,9 +44,11 @@
 #define YT921X_TAG_RX_PORT_M GENMASK(14, 11)
 #define YT921X_TAG_RX_CMD_M GENMASK(10, 0)
 #define YT921X_TAG_RX_CMD(x) FIELD_PREP(YT921X_TAG_RX_CMD_M, (x))
+
 #define YT921X_TAG_RX_CMD_FORWARDED 0x80
 #define YT921X_TAG_RX_CMD_UNK_UCAST 0xb2
 #define YT921X_TAG_RX_CMD_UNK_MCAST 0xb4
+
 #define YT921X_TAG_TX_PORTS GENMASK(10, 0)
 
 static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *dev)
@@ -59,7 +61,7 @@ static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *d
 	skb_push(skb, YT921X_TAG_LEN);
 
 	/* 2. Move the Ethernet header (DA + SA) to the start of the buffer
-	 *    to make room for the tag immediately after it.
+	 * to make room for the tag immediately after it.
 	 */
 	memmove(skb->data, skb->data + YT921X_TAG_LEN, 2 * ETH_ALEN);
 
@@ -72,9 +74,9 @@ static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *d
 	tag[2] = 0;
 
 	/* 5. Construct the TX Tag field
-	 *    In Linux 6.6, dsa_skb_tx_port_mask is used instead of dsa_xmit_port_mask.
+	 * In Linux 6.6, dsa_xmit_port_mask is used.
 	 */
-	port_mask = dsa_skb_tx_port_mask(skb);
+	port_mask = dsa_xmit_port_mask(skb);
 	tx = FIELD_PREP(YT921X_TAG_TX_PORTS, port_mask) | YT921X_TAG_PORT_EN;
 	tag[3] = htons(tx);
 
@@ -96,12 +98,14 @@ static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb, struct net_device *de
 	tag = (__be16 *)(skb->data + 2 * ETH_ALEN);
 
 	if (unlikely(tag[0] != htons(ETH_P_YT921X))) {
-		dev_warn_ratelimited(&dev->dev, "Unexpected EtherType 0x%04x\n", ntohs(tag[0]));
+		dev_warn_ratelimited(&dev->dev, "Unexpected EtherType 0x%04x\n",
+				      ntohs(tag[0]));
 		return NULL;
 	}
 
 	/* Locate which port this is coming from */
 	rx = ntohs(tag[2]);
+
 	if (unlikely((rx & YT921X_TAG_PORT_EN) == 0)) {
 		dev_warn_ratelimited(&dev->dev, "Unexpected rx tag 0x%04x\n", rx);
 		return NULL;
@@ -110,9 +114,9 @@ static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb, struct net_device *de
 	port = FIELD_GET(YT921X_TAG_RX_PORT_M, rx);
 
 	/* Find the user network device corresponding to the switch port.
-	 * In Linux 6.6, dsa_master_find_slave replaces dsa_conduit_find_user.
+	 * In Linux 6.6, dsa_conduit_find_user is used.
 	 */
-	slave = dsa_master_find_slave(dev, 0, port);
+	slave = dsa_conduit_find_user(dev, port);
 	if (!slave) {
 		dev_warn_ratelimited(&dev->dev, "Couldn't decode source port %u\n", port);
 		return NULL;
@@ -121,6 +125,7 @@ static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb, struct net_device *de
 	skb->dev = slave;
 
 	cmd = FIELD_GET(YT921X_TAG_RX_CMD_M, rx);
+
 	switch (cmd) {
 	case YT921X_TAG_RX_CMD_FORWARDED:
 		/* Already forwarded by hardware */
@@ -152,16 +157,17 @@ static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb, struct net_device *de
 }
 
 static const struct dsa_device_ops yt921x_netdev_ops = {
-	.name		= YT921X_TAG_NAME,
-	.proto		= DSA_TAG_PROTO_YT921X,
-	.xmit		= yt921x_tag_xmit,
-	.rcv		= yt921x_tag_rcv,
-	.needed_headroom	= YT921X_TAG_LEN,
+	.name = YT921X_TAG_NAME,
+	.proto = DSA_TAG_PROTO_YT921X,
+	.xmit = yt921x_tag_xmit,
+	.rcv = yt921x_tag_rcv,
+	.needed_headroom = YT921X_TAG_LEN,
 };
 
 MODULE_DESCRIPTION("DSA tag driver for Motorcomm YT921x switches");
 MODULE_LICENSE("GPL");
-/* In Linux 6.6, MODULE_ALIAS_DSA_TAG_DRIVER expects the ops struct instance directly */
-MODULE_ALIAS_DSA_TAG_DRIVER(yt921x_netdev_ops);
+
+/* In Linux 6.6, MODULE_ALIAS_DSA_TAG_DRIVER expects the protocol ID */
+MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_YT921X);
 
 module_dsa_tag_driver(yt921x_netdev_ops);
