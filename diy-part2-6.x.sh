@@ -73,8 +73,5 @@ cp -f $GITHUB_WORKSPACE/configfiles/driver/999-01-net-dsa-add-yt921x-header-defs
 # cp -f $GITHUB_WORKSPACE/configfiles/netdevices.mk package/kernel/linux/modules/netdevices.mk
 
 
-# cp -f $GITHUB_WORKSPACE/configfiles/driver/010-add-yt921x-tag-driver.patch target/linux/rockchip/patches-6.6/010-add-yt921x-tag-driver.patch
-
-
 # cp -f $GITHUB_WORKSPACE/configfiles/driver/dsa/011-net-dsa-add-tag_yt921x-source.patch target/linux/rockchip/patches-6.6/011-net-dsa-add-tag_yt921x-source.patch
 # cp -f $GITHUB_WORKSPACE/configfiles/driver/Makefile3 target/linux/rockchip/Makefile
