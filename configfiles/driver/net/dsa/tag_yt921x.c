@@ -122,8 +122,7 @@ static struct sk_buff *yt921x_tag_rcv(struct sk_buff *skb,
 	switch (cmd) {
 	case YT921X_TAG_RX_CMD_FORWARDED:
 		/* Already forwarded by hardware */
-		/* dsa_default_offload_fwd_mark is removed in 6.6, set flag directly */
-		skb->offload_fwd_mark = 1;
+		dsa_default_offload_fwd_mark(skb);
 		break;
 	case YT921X_TAG_RX_CMD_UNK_UCAST:
 	case YT921X_TAG_RX_CMD_UNK_MCAST:
