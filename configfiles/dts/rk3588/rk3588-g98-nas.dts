@@ -1103,6 +1103,7 @@
 		reg = <29>;
 		status = "okay";
 		dsa,member = <1 0>;
+		switchid = <0>;
 
 		mdio {
 			#address-cells = <1>;
@@ -1163,6 +1164,7 @@
 		reg = <29>;
 		status = "okay";
 		dsa,member = <0 0>;
+		switchid = <0>;
 
 		mdio {
 			#address-cells = <1>;
