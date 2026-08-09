@@ -2209,7 +2209,7 @@ static int yt921x_port_config(struct yt921x_priv *priv, int port, unsigned int m
 		if (res)
 			return res;
 
-		res = yt921x_reg_write(priv, YT921X_XMIIn(port), 0x841C4108); //0x80408 = 0x841C4108,延迟，啥的全部在里面了
+		res = yt921x_reg_write(priv, YT921X_XMIIn(port), 0x8400C100);
 		if (res)
 			return res;
 		break;
@@ -2826,7 +2826,6 @@ static void yt921x_mdio_remove(struct mdio_device *mdiodev)
 	/* Restore original netdev_ops if we hijacked them */
 	if (priv->orig_conduit_ops)
 		WRITE_ONCE(priv->conduit->netdev_ops, priv->orig_conduit_ops);
-
 
 	for (size_t i = ARRAY_SIZE(priv->ports); i-- > 0; ) {
 		struct yt921x_port *pp = &priv->ports[i];
