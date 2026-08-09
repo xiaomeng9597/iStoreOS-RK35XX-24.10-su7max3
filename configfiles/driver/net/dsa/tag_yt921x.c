@@ -28,11 +28,6 @@
 #include <linux/etherdevice.h>
 #include "tag.h"
 
-/* Manually declare internal DSA functions to fix implicit declaration errors */
-extern struct dsa_port *dsa_slave_to_port(struct net_device *dev);
-extern struct net_device *dsa_master_find_slave(struct net_device *dev,
-						int sw_index, int port);
-
 #define YT921X_TAG_NAME		"yt921x"
 #define YT921X_TAG_LEN		8
 
@@ -73,7 +68,7 @@ static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb,
 	tag[1] = 0;
 	tag[2] = 0;
 
-	/* 
+	/*
 	 * Fix: dsa_xmit_port_mask is not available in this kernel version.
 	 * Manually get the port index and calculate the mask.
 	 */
