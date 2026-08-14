@@ -51,6 +51,8 @@
 #include "dwxgmac2.h"
 #include "hwif.h"
 
+#define DEBUG
+
 /* As long as the interface is active, we keep the timestamping counter enabled
  * with fine resolution and binary rollover. This avoid non-monotonic behavior
  * (clock jumps) when changing timestamping settings at runtime.
@@ -364,7 +366,7 @@ static inline u32 stmmac_tx_avail(struct stmmac_priv *priv, u32 queue)
 {
 	struct stmmac_tx_queue *tx_q = &priv->dma_conf.tx_queue[queue];
 	u32 avail;
-	smp_rmb();
+
 	if (tx_q->dirty_tx > tx_q->cur_tx)
 		avail = tx_q->dirty_tx - tx_q->cur_tx - 1;
 	else
@@ -2559,6 +2561,11 @@ static int stmmac_tx_clean(struct stmmac_priv *priv, int budget, u32 queue)
 
 	entry = tx_q->dirty_tx;
 
+      #ifdef DEBUG
+      printk(KERN_DEBUG "stmmac_tx_clean: queue=%d, budget=%d, dirty_tx=%d, cur_tx=%d\n", 
+             queue, budget, tx_q->dirty_tx, tx_q->cur_tx);
+      #endif
+
 	/* Try to clean all TX complete frame in 1 shot */
 	while ((entry != tx_q->cur_tx) && count < priv->dma_conf.dma_tx_size) {
 		struct xdp_frame *xdpf;
@@ -2843,6 +2850,11 @@ static void stmmac_dma_interrupt(struct stmmac_priv *priv)
 				tx_channel_count : rx_channel_count;
 	u32 chan;
 	int status[MAX_T(u32, MTL_MAX_TX_QUEUES, MTL_MAX_RX_QUEUES)];
+
+      #ifdef DEBUG
+      printk(KERN_DEBUG "stmmac_dma_interrupt: tx_queues=%d, rx_queues=%d\n", 
+             tx_channel_count, rx_channel_count);
+      #endif
 
 	/* Make sure we never check beyond our status buffer. */
 	if (WARN_ON_ONCE(channels_to_check > ARRAY_SIZE(status)))
@@ -3317,6 +3329,11 @@ static int stmmac_hw_setup(struct net_device *dev, bool ptp_register)
 	bool sph_en;
 	u32 chan;
 	int ret;
+
+      #ifdef DEBUG
+      printk(KERN_DEBUG "stmmac_hw_setup: rx_queues=%d, tx_queues=%d, ptp_register=%d\n", 
+             rx_cnt, tx_cnt, ptp_register);
+      #endif
 
 	/* DMA initialization and SW reset */
 	ret = stmmac_init_dma_engine(priv);
@@ -4083,6 +4100,7 @@ static netdev_tx_t stmmac_tso_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct stmmac_priv *priv = netdev_priv(dev);
 	int nfrags = skb_shinfo(skb)->nr_frags;
 	u32 queue = skb_get_queue_mapping(skb);
+	int gso = skb_shinfo(skb)->gso_type;
 	unsigned int first_entry, tx_packets;
 	struct stmmac_txq_stats *txq_stats;
 	int tmp_pay_len = 0, first_tx;
@@ -4096,6 +4114,11 @@ static netdev_tx_t stmmac_tso_xmit(struct sk_buff *skb, struct net_device *dev)
 	tx_q = &priv->dma_conf.tx_queue[queue];
 	txq_stats = &priv->xstats.txq_stats[queue];
 	first_tx = tx_q->cur_tx;
+
+    #ifdef DEBUG
+    printk(KERN_DEBUG "stmmac_tso_xmit: skb len=%d, gso_type=%d, nfrags=%d, queue=%d\n", 
+           skb->len, gso, nfrags, queue);
+    #endif
 
 	/* Compute header lengths */
 	if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_L4) {
@@ -4376,6 +4399,10 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 	tx_q = &priv->dma_conf.tx_queue[queue];
 	txq_stats = &priv->xstats.txq_stats[queue];
 	first_tx = tx_q->cur_tx;
+
+    #ifdef DEBUG
+    printk(KERN_DEBUG "stmmac_xmit: skb len=%d, queue=%d\n", skb->len, skb_get_queue_mapping(skb));
+    #endif
 
 	if (priv->tx_path_in_lpi_mode && priv->eee_sw_timer_en)
 		stmmac_disable_eee_mode(priv);
@@ -5287,6 +5314,10 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 	dma_dir = page_pool_get_dma_dir(rx_q->page_pool);
 	bufsz = DIV_ROUND_UP(priv->dma_conf.dma_buf_sz, PAGE_SIZE) * PAGE_SIZE;
 
+    #ifdef DEBUG
+    printk(KERN_DEBUG "stmmac_rx: queue=%d, limit=%d\n", queue, limit);
+    #endif
+
 	if (netif_msg_rx_status(priv)) {
 		void *rx_head;
 
@@ -5939,6 +5970,11 @@ static irqreturn_t stmmac_mac_interrupt(int irq, void *dev_id)
 {
 	struct net_device *dev = (struct net_device *)dev_id;
 	struct stmmac_priv *priv = netdev_priv(dev);
+
+      #ifdef DEBUG
+      printk(KERN_DEBUG "stmmac_mac_interrupt: LPI mode=%d, carrier=%d\n", 
+             priv->tx_path_in_lpi_mode, netif_carrier_ok(priv->dev));
+      #endif
 
 	/* Check if adapter is up */
 	if (test_bit(STMMAC_DOWN, &priv->state))
@@ -7823,6 +7859,11 @@ static void stmmac_reset_queues_param(struct stmmac_priv *priv)
 	u32 rx_cnt = priv->plat->rx_queues_to_use;
 	u32 tx_cnt = priv->plat->tx_queues_to_use;
 	u32 queue;
+
+      #ifdef DEBUG
+      printk(KERN_DEBUG "stmmac_reset_queues_param: rx_queues=%d, tx_queues=%d\n", 
+             rx_cnt, tx_cnt);
+      #endif
 
 	for (queue = 0; queue < rx_cnt; queue++)
 		stmmac_reset_rx_queue(priv, queue);
