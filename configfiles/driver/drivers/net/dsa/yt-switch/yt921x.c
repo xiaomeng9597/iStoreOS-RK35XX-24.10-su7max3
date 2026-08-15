@@ -11,6 +11,7 @@
 #include <linux/dcbnl.h>
 #include <linux/etherdevice.h>
 #include <linux/if_bridge.h>
+#include <linux/if_hsr.h>
 #include <linux/if_vlan.h>
 #include <linux/iopoll.h>
 #include <linux/mdio.h>
@@ -20,8 +21,6 @@
 #include <linux/of_net.h>
 #include <linux/sort.h>
 #include <net/dsa.h>
-#include <net/dscp.h>
-#include <net/ieee8021q.h>
 #include "yt921x.h"
 
 struct yt921x_mib_desc {
