@@ -2238,6 +2238,12 @@ static void yt921x_dsa_phylink_get_caps(struct dsa_switch *ds, int port, struct 
 		__set_bit(PHY_INTERFACE_MODE_1000BASEX, config->supported_interfaces);
 		__set_bit(PHY_INTERFACE_MODE_2500BASEX, config->supported_interfaces);
 		config->mac_capabilities |= MAC_2500FD;
+
+		/* XMII */
+		__set_bit(PHY_INTERFACE_MODE_RGMII, config->supported_interfaces);
+		__set_bit(PHY_INTERFACE_MODE_RGMII_ID, config->supported_interfaces);
+		__set_bit(PHY_INTERFACE_MODE_RGMII_RXID, config->supported_interfaces);
+		__set_bit(PHY_INTERFACE_MODE_RGMII_TXID, config->supported_interfaces);
 	}
 }
 
