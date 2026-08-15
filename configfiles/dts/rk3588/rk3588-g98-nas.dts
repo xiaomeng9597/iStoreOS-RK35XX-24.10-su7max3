@@ -849,16 +849,6 @@
 			rockchip,pins = <0 RK_PD5 RK_FUNC_GPIO &pcfg_output_high>;
 		};
 	};
-
-	gmac {
-		mdio0_pins: mdio0-pins {
-			rockchip,pins = <3 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-
-		mdio1_pins: mdio1-pins {
-			rockchip,pins = <4 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
 };
 
 /* ===== Storage ===== */
@@ -900,15 +890,13 @@
 
 // gmac0: ethernet@fe1b0000 
 &gmac0 {
-	/delete-property/ snps,reset-gpio;
-	/delete-property/ snps,reset-active-low;
-	/delete-property/ snps,reset-delays-us;
 	clock_in_out = "output";
 	phy-mode = "rgmii-rxid";
 	pinctrl-0 = <&gmac0_miim &gmac0_tx_bus2 &gmac0_rx_bus2 &gmac0_rgmii_clk &gmac0_rgmii_bus>;
-	//snps,reset-gpio = <&gpio3 RK_PD0 GPIO_ACTIVE_LOW>;
-	//snps,reset-active-low;
-	//snps,reset-delays-us = <0 20000 100000>;
+	snps,reset-gpio = <&gpio3 RK_PD0 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 20000 100000>;
+	snps,en-hdr-sel = <0>;
 	pinctrl-names = "default";
 	status = "okay";
 
@@ -922,15 +910,13 @@
 
 // gmac1: ethernet@fe1c0000
 &gmac1 {
-	/delete-property/ snps,reset-gpio;
-	/delete-property/ snps,reset-active-low;
-	/delete-property/ snps,reset-delays-us;
 	clock_in_out = "output";
 	phy-mode = "rgmii-rxid";
 	pinctrl-0 = <&gmac1_miim &gmac1_tx_bus2 &gmac1_rx_bus2 &gmac1_rgmii_clk &gmac1_rgmii_bus>;
-	//snps,reset-gpio = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
-	//snps,reset-active-low;
-	//snps,reset-delays-us = <0 20000 100000>;
+	snps,reset-gpio = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 20000 100000>;
+	snps,en-hdr-sel = <0>;
 	pinctrl-names = "default";
 	status = "okay";
 
@@ -947,15 +933,6 @@
 &uart2 {
 	pinctrl-0 = <&uart2m0_xfer>;
 	status = "okay";
-};
-
-/* uart7m2 (feba0000) muxes to GPIO1_PB4/PB5, which conflicts with
- * pcie2x1l0 PERST# (pcie2_0_rst = GPIO1_PB4). If uart7 probes, the
- * pcie2x1l0 host bridge loses the pinctrl request and fails to probe,
- * taking the first 2.5G NIC down with it. Keep it disabled.
- */
-&uart7 {
-	status = "disabled";
 };
 
 /* ===== USB ===== */
@@ -1117,19 +1094,11 @@
 
 /* ===== Switch ===== */
 &mdio0 {
-	pinctrl-0 = <&mdio0_pins>;
-	pinctrl-names = "default";
-	status = "okay";
-
 	switch@1d {
 		compatible = "motorcomm,yt9215";
 		reg = <29>;
 		status = "okay";
 		dsa,member = <1 0>;
-		switchid = <0>;
-		reset-gpios = <&gpio3 RK_PD0 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <10000>; /* 10ms */
-		reset-deassert-us = <50000>; /* 50ms */
 
 		mdio {
 			#address-cells = <1>;
@@ -1177,7 +1146,6 @@
 				fixed-link {
 					speed = <1000>;
 					full-duplex;
-					pause;
 				};
 			};
 		};
@@ -1185,20 +1153,11 @@
 };
 
 &mdio1 {
-	pinctrl-0 = <&mdio1_pins>;
-	pinctrl-names = "default";
-	status = "okay";
-
 	switch@1d {
 		compatible = "motorcomm,yt9215";
 		reg = <29>;
 		status = "okay";
 		dsa,member = <0 0>;
-		switchid = <1>;
-
-		reset-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <10000>; /* 10ms */
-		reset-deassert-us = <50000>; /* 50ms */
 
 		mdio {
 			#address-cells = <1>;
@@ -1246,7 +1205,6 @@
 				fixed-link {
 					speed = <1000>;
 					full-duplex;
-					pause;
 				};
 			};
 		};
