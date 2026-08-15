@@ -71,13 +71,11 @@ static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *n
 	tag[0] = htons(ETH_P_YT921X);
 	/* VLAN tag unrelated when TX */
 	tag[1] = 0;
-	ctrl = YT921X_TAG_CODE(YT921X_TAG_CODE_FORWARD) |
-	       YT921X_TAG_CODE_EN |
+	ctrl = YT921X_TAG_CODE(YT921X_TAG_CODE_FORWARD) | YT921X_TAG_CODE_EN |
 	       YT921X_TAG_PRIO(skb->priority);
 	tag[2] = htons(ctrl);
-	/* OpenWrt 6.6 doesn't have dsa_xmit_port_mask, use dsa_upstream_port */
-	ctrl = YT921X_TAG_TX_PORTS(BIT(dsa_upstream_port(dp->ds, dp->index))) |
-	       YT921X_TAG_PORT_EN;
+
+	ctrl = YT921X_TAG_TX_PORTS(BIT(dp->index)) | YT921X_TAG_PORT_EN;
 	tag[3] = htons(ctrl);
 
 	return skb;
