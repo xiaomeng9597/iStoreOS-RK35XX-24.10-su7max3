@@ -2155,6 +2155,25 @@ static int yt921x_port_config(struct yt921x_priv *priv, int port, unsigned int m
 		if (res)
 			return res;
 		break;
+	/*XMII*/
+	case PHY_INTERFACE_MODE_RGMII:
+	case PHY_INTERFACE_MODE_RGMII_ID:
+	case PHY_INTERFACE_MODE_RGMII_RXID:
+	case PHY_INTERFACE_MODE_RGMII_TXID:
+		mask = YT921X_SERDES_CTRL_PORTn(port); //clear serdes mode
+		res = yt921x_reg_clear_bits(priv, YT921X_SERDES_CTRL, mask); //clear serdes mode
+		if (res)
+			return res;
+
+		mask = YT921X_XMII_CTRL_PORTn(port);
+		res = yt921x_reg_set_bits(priv, YT921X_XMII_CTRL, mask); //enable xmii 0x80394=1
+		if (res)
+			return res;
+
+		res = yt921x_reg_write(priv, YT921X_XMIIn(port), 0x841C4108); //0x80408 = 0x841C4108,延迟，啥的全部在里面了
+		if (res)
+			return res;
+		break;
 	default:
 		return -EINVAL;
 	}
