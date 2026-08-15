@@ -20,7 +20,6 @@
 #include <linux/of_net.h>
 #include <linux/sort.h>
 #include <net/dsa.h>
-#include <net/dscp.h>
 #include "yt921x.h"
 
 struct yt921x_mib_desc {
