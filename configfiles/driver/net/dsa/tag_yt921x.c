@@ -30,6 +30,10 @@
 
 #include "tag.h"	/* BSP 6.1: etype/tag helpers live here, not "tag.h" */
 
+#ifndef ETH_P_YT921X
+#define ETH_P_YT921X 0x9988
+#endif
+
 #define YT921X_TAG_NAME	"yt921x"
 
 #define YT921X_TAG_LEN	8

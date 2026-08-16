@@ -8,6 +8,10 @@
 
 #include <net/dsa.h>
 
+#ifndef ETH_P_YT921X
+#define ETH_P_YT921X 0x9988
+#endif
+
 #define YT921X_SMI_SWITCHID_M		GENMASK(3, 2)
 #define  YT921X_SMI_SWITCHID(x)			FIELD_PREP(YT921X_SMI_SWITCHID_M, (x))
 #define YT921X_SMI_AD			BIT(1)
