@@ -188,6 +188,5 @@ static const struct dsa_device_ops yt921x_netdev_ops = {
 
 MODULE_DESCRIPTION("DSA tag driver for Motorcomm YT921x switches");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_YT921X); /* BSP 6.1: 1-arg form */
-
+MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_YT921X, YT921X_TAG_NAME);
 module_dsa_tag_driver(yt921x_netdev_ops);
