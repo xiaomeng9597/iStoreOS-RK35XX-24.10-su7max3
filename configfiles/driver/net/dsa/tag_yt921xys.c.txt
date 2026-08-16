@@ -60,10 +60,9 @@ enum yt921x_tag_code {
 
 static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *netdev)
 {
+	struct dsa_port *dp = dsa_slave_to_port(netdev);
 	__be16 *tag;
 	u16 ctrl;
-	struct dsa_port *dp;
-	u32 port_mask;
 
 	skb_push(skb, YT921X_TAG_LEN);
 	dsa_alloc_etype_header(skb, YT921X_TAG_LEN);
@@ -72,15 +71,11 @@ static struct sk_buff *yt921x_tag_xmit(struct sk_buff *skb, struct net_device *n
 	tag[0] = htons(ETH_P_YT921X);
 	/* VLAN tag unrelated when TX */
 	tag[1] = 0;
-	dp = dsa_slave_to_port(netdev);
-	if (!dp)
-		return NULL;
-	port_mask = BIT(dp->index);
 	ctrl = YT921X_TAG_CODE(YT921X_TAG_CODE_FORWARD) | YT921X_TAG_CODE_EN |
 	       YT921X_TAG_PRIO(skb->priority);
 	tag[2] = htons(ctrl);
 
-	ctrl = YT921X_TAG_TX_PORTS(port_mask) | YT921X_TAG_PORT_EN;
+	ctrl = YT921X_TAG_TX_PORTS(BIT(dp->index)) | YT921X_TAG_PORT_EN;
 	tag[3] = htons(ctrl);
 
 	return skb;
