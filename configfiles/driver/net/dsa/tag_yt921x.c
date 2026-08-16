@@ -28,7 +28,7 @@
 
 #include <linux/etherdevice.h>
 
-#include "dsa_priv.h"	/* BSP 6.1: etype/tag helpers live here, not "tag.h" */
+#include "tag.h"	/* BSP 6.1: etype/tag helpers live here, not "tag.h" */
 
 #define YT921X_TAG_NAME	"yt921x"
 

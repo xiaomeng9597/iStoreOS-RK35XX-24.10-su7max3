@@ -1139,7 +1139,6 @@
 			};
 			ethernet-port@9 {
 				reg = <9>;
-				label = "cpu";
 				ethernet = <&gmac0>;
 				phy-mode = "rgmii-txid";
 
@@ -1198,7 +1197,6 @@
 			};
 			ethernet-port@9 {
 				reg = <9>;
-				label = "cpu";
 				ethernet = <&gmac1>;
 				phy-mode = "rgmii-txid";
 
