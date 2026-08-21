@@ -2907,7 +2907,6 @@ static int yt921x_mdio_probe(struct mdio_device *mdiodev)
 
 	res = dsa_register_switch(ds);
 	if (res) {
-		dev_err(dev, "YT921x: dsa_register_switch failed: %d\n", res);
 		return res;
 	}
 
