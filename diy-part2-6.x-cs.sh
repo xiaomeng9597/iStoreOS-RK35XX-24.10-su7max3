@@ -20,11 +20,15 @@ cp -a $GITHUB_WORKSPACE/configfiles/etc/* package/base-files/files/etc/
 # 追加自定义内核配置项
 echo "CONFIG_PSI=y
 CONFIG_KPROBES=y
+CONFIG_DEBUG_KERNEL=y
 CONFIG_NET_DSA=y
-CONFIG_NET_DSA_YT921X=y
 CONFIG_NET_DSA_TAG_YT921X=y
-CONFIG_NET_DSA_YT921X_DEBUG=n
-CONFIG_NET_DSA_YT921X_CR881X=n" >> target/linux/rockchip/armv8/config-6.6
+CONFIG_NET_DSA_YT921X=y
+CONFIG_R8125=y
+CONFIG_R8126=y
+CONFIG_BRIDGE=y
+CONFIG_BRIDGE_VLAN_FILTERING=y
+CONFIG_VLAN_8021Q=y" >> target/linux/rockchip/armv8/config-6.6
 cat target/linux/rockchip/armv8/config-6.6
 
 
