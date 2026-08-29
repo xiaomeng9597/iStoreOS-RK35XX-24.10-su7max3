@@ -899,12 +899,24 @@
 	snps,reset-active-low;
 	snps,reset-delays-us = <0 20000 100000>;
 	pinctrl-names = "default";
+	snps,mtl-rx-config = <&gmac0_mtl_rx_setup>;
+	snps,mtl-tx-config = <&gmac0_mtl_tx_setup>;
 	status = "okay";
 
 	fixed-link {
 		speed = <1000>;
 		full-duplex;
 		pause;
+	};
+
+	gmac0_mtl_rx_setup: rx-queues-config {
+		snps,rx-queues-to-use = <1>;
+		queue0 {};
+	};
+
+	gmac0_mtl_tx_setup: tx-queues-config {
+		snps,tx-queues-to-use = <1>;
+		queue0 {};
 	};
 
 };
@@ -918,12 +930,24 @@
 	snps,reset-active-low;
 	snps,reset-delays-us = <0 20000 100000>;
 	pinctrl-names = "default";
+	snps,mtl-rx-config = <&gmac1_mtl_rx_setup>;
+	snps,mtl-tx-config = <&gmac1_mtl_tx_setup>;
 	status = "okay";
 
 	fixed-link {
 		speed = <1000>;
 		full-duplex;
 		pause;
+	};
+
+	gmac1_mtl_rx_setup: rx-queues-config {
+		snps,rx-queues-to-use = <1>;
+		queue0 {};
+	};
+
+	gmac1_mtl_tx_setup: tx-queues-config {
+		snps,tx-queues-to-use = <1>;
+		queue0 {};
 	};
 
 };
