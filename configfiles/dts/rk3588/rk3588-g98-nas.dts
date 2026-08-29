@@ -892,8 +892,6 @@
 
 // gmac0: ethernet@fe1b0000 
 &gmac0 {
-	/delete-node/ rx-queues-config;
-	/delete-node/ tx-queues-config;
 	clock_in_out = "output";
 	phy-mode = "rgmii-rxid";
 	pinctrl-0 = <&gmac0_miim &gmac0_tx_bus2 &gmac0_rx_bus2 &gmac0_rgmii_clk &gmac0_rgmii_bus>;
@@ -914,19 +912,19 @@
 	gmac0_mtl_rx_setup: rx-queues-config {
 		snps,rx-queues-to-use = <1>;
 		queue0 {};
+		/delete-node/ queue1;
 	};
 
 	gmac0_mtl_tx_setup: tx-queues-config {
 		snps,tx-queues-to-use = <1>;
 		queue0 {};
+		/delete-node/ queue1;
 	};
 
 };
 
 // gmac1: ethernet@fe1c0000
 &gmac1 {
-	/delete-node/ rx-queues-config;
-	/delete-node/ tx-queues-config;
 	clock_in_out = "output";
 	phy-mode = "rgmii-rxid";
 	pinctrl-0 = <&gmac1_miim &gmac1_tx_bus2 &gmac1_rx_bus2 &gmac1_rgmii_clk &gmac1_rgmii_bus>;
@@ -947,11 +945,13 @@
 	gmac1_mtl_rx_setup: rx-queues-config {
 		snps,rx-queues-to-use = <1>;
 		queue0 {};
+		/delete-node/ queue1;
 	};
 
 	gmac1_mtl_tx_setup: tx-queues-config {
 		snps,tx-queues-to-use = <1>;
 		queue0 {};
+		/delete-node/ queue1;
 	};
 
 };
